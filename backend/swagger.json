@@ -1,15 +1,173 @@
 {
   "openapi": "3.0.0",
-  "info": { "title": "Reverb API", "version": "1.0.0" },
+  "info": {
+    "title": "Reverb Collaborative Platform API",
+    "version": "1.0.0",
+    "description": "API documentation for the Reverb music collaboration project."
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User registration and login"
+    },
+    {
+      "name": "Profile",
+      "description": "User profile management"
+    },
+    {
+      "name": "Home",
+      "description": "Home page content"
+    },
+    {
+      "name": "Friends",
+      "description": "Friends management (add, list, remove)"
+    },
+    {
+      "name": "Collaboration",
+      "description": "Real-time collaboration sessions and audio processing"
+    }
+  ],
   "paths": {
-    "/api/auth/register": { "post":{} },
-    "/api/auth/login":    { "post":{} },
-    "/api/profile":       { "get":{}, "put":{} },
-    "/api/home":          { "get":{} },
-    "/api/friends":       { "get":{}, "post":{}, "delete":{} },
-    "/api/collaboration/session": { "post":{} },
-    "/api/collaboration/join":    { "post":{} },
-    "/api/collaboration/plugins": { "get":{} },
-    "/api/collaboration/process": { "post":{} }
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user",
+        "responses": {
+          "200": {
+            "description": "User registered successfully"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login an existing user",
+        "responses": {
+          "200": {
+            "description": "User logged in successfully"
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get the logged-in user's profile",
+        "responses": {
+          "200": {
+            "description": "Profile fetched"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Profile"],
+        "summary": "Update the logged-in user's profile",
+        "responses": {
+          "200": {
+            "description": "Profile updated"
+          }
+        }
+      }
+    },
+    "/api/home": {
+      "get": {
+        "tags": ["Home"],
+        "summary": "Get home page welcome content",
+        "responses": {
+          "200": {
+            "description": "Home content fetched"
+          }
+        }
+      }
+    },
+    "/api/friends": {
+      "get": {
+        "tags": ["Friends"],
+        "summary": "Get list of friends",
+        "responses": {
+          "200": {
+            "description": "Friends listed"
+          }
+        }
+      }
+    },
+    "/api/friends/add": {
+      "post": {
+        "tags": ["Friends"],
+        "summary": "Add a new friend by email",
+        "responses": {
+          "200": {
+            "description": "Friend added"
+          }
+        }
+      }
+    },
+    "/api/friends/{id}": {
+      "delete": {
+        "tags": ["Friends"],
+        "summary": "Remove a friend by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the friend to remove",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friend removed"
+          }
+        }
+      }
+    },
+    "/api/collaboration/session": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Create a new collaboration session",
+        "responses": {
+          "200": {
+            "description": "Session created"
+          }
+        }
+      }
+    },
+    "/api/collaboration/join": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Join an existing collaboration session",
+        "responses": {
+          "200": {
+            "description": "Joined session"
+          }
+        }
+      }
+    },
+    "/api/collaboration/plugins": {
+      "get": {
+        "tags": ["Collaboration"],
+        "summary": "List available audio plugins",
+        "responses": {
+          "200": {
+            "description": "Plugins listed"
+          }
+        }
+      }
+    },
+    "/api/collaboration/process": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Apply a plugin to audio",
+        "responses": {
+          "200": {
+            "description": "Audio processed"
+          }
+        }
+      }
+    }
   }
 }
