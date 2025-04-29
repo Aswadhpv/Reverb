@@ -1,0 +1,15 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reverb API", "version": "1.0.0" },
+  "paths": {
+    "/api/auth/register": { "post":{} },
+    "/api/auth/login":    { "post":{} },
+    "/api/profile":       { "get":{}, "put":{} },
+    "/api/home":          { "get":{} },
+    "/api/friends":       { "get":{}, "post":{}, "delete":{} },
+    "/api/collaboration/session": { "post":{} },
+    "/api/collaboration/join":    { "post":{} },
+    "/api/collaboration/plugins": { "get":{} },
+    "/api/collaboration/process": { "post":{} }
+  }
+}
