@@ -73,3 +73,15 @@ exports.login = async (req, res) => {
         res.status(500).json({ msg: "Internal server error" });
     }
 };
+
+// logout
+exports.logout = async (req, res) => {
+    try {
+        // On frontend: just remove the token from local storage or cookie
+        res.status(200).json({ msg: "Logged out successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Internal server error" });
+    }
+};
+

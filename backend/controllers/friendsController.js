@@ -1,15 +1,47 @@
 const User = require('../models/User');
+
 exports.list = async (req, res) => {
-    const me = await User.findById(req.user.id).populate('friends','username email');
-    res.json(me.friends);
+    try {
+        const me = await User.findById(req.user.id).populate('friends', 'username email');
+        res.json(me.friends);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
 };
+
 exports.add = async (req, res) => {
-    const f = await User.findOne({ email: req.body.email });
-    if (!f) return res.status(404).json({ msg:'Not found' });
-    await User.findByIdAndUpdate(req.user.id,{ $addToSet:{ friends:f._id } });
-    res.json({ msg:'Added' });
+    try {
+        const friend = await User.findOne({ email: req.body.email });
+        if (!friend) return res.status(404).json({ msg: 'User not found' });
+        if (friend._id.equals(req.user.id)) return res.status(400).json({ msg: 'Cannot add yourself' });
+
+        const me = await User.findById(req.user.id);
+        if (me.friends.includes(friend._id)) {
+            return res.status(400).json({ msg: 'User already in friends list' });
+        }
+
+        me.friends.push(friend._id);
+        await me.save();
+        res.json({ msg: 'Friend added successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
 };
+
 exports.remove = async (req, res) => {
-    await User.findByIdAndUpdate(req.user.id,{ $pull:{ friends:req.params.id } });
-    res.json({ msg:'Removed' });
+    try {
+        const me = await User.findById(req.user.id);
+        if (!me.friends.includes(req.params.id)) {
+            return res.status(404).json({ msg: 'Friend not found in your list' });
+        }
+
+        me.friends.pull(req.params.id);
+        await me.save();
+        res.json({ msg: 'Friend removed successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
 };
