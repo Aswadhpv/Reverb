@@ -6,27 +6,21 @@
     "description": "API documentation for the Reverb music collaboration project."
   },
   "tags": [
-    {
-      "name": "Authentication",
-      "description": "User registration and login"
-    },
-    {
-      "name": "Profile",
-      "description": "User profile management"
-    },
-    {
-      "name": "Home",
-      "description": "Home page content"
-    },
-    {
-      "name": "Friends",
-      "description": "Friends management (add, list, remove)"
-    },
-    {
-      "name": "Collaboration",
-      "description": "Real-time collaboration sessions and audio processing"
-    }
+    { "name": "Authentication", "description": "User registration and login" },
+    { "name": "Profile", "description": "User profile management" },
+    { "name": "Home", "description": "Home page content" },
+    { "name": "Friends", "description": "Friends management (add, list, remove)" },
+    { "name": "Collaboration", "description": "Real-time collaboration sessions and audio processing" }
   ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
   "paths": {
     "/api/auth/register": {
       "post": {
@@ -87,19 +81,36 @@
       "get": {
         "tags": ["Profile"],
         "summary": "Get the logged-in user's profile",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": {
-            "description": "Profile fetched"
-          }
+          "200": { "description": "Profile fetched" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       },
       "put": {
         "tags": ["Profile"],
         "summary": "Update the logged-in user's profile",
-        "responses": {
-          "200": {
-            "description": "Profile updated"
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string", "example": "NewUsername" },
+                  "password": { "type": "string", "example": "NewPassword123!" }
+                }
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -108,9 +119,7 @@
         "tags": ["Home"],
         "summary": "Get home page welcome content",
         "responses": {
-          "200": {
-            "description": "Home content fetched"
-          }
+          "200": { "description": "Home content fetched" }
         }
       }
     },
@@ -118,10 +127,11 @@
       "get": {
         "tags": ["Friends"],
         "summary": "Get list of friends",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": {
-            "description": "Friends listed"
-          }
+          "200": { "description": "Friends listed" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -129,10 +139,27 @@
       "post": {
         "tags": ["Friends"],
         "summary": "Add a new friend by email",
-        "responses": {
-          "200": {
-            "description": "Friend added"
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "example": "friend@example.com" }
+                },
+                "required": ["email"]
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Friend added" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Friend not found" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -140,21 +167,21 @@
       "delete": {
         "tags": ["Friends"],
         "summary": "Remove a friend by ID",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "description": "ID of the friend to remove",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Friend removed"
-          }
+          "200": { "description": "Friend removed" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Friend not found" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -162,10 +189,25 @@
       "post": {
         "tags": ["Collaboration"],
         "summary": "Create a new collaboration session",
-        "responses": {
-          "200": {
-            "description": "Session created"
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "New Session" }
+                }
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Session created" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -173,10 +215,26 @@
       "post": {
         "tags": ["Collaboration"],
         "summary": "Join an existing collaboration session",
-        "responses": {
-          "200": {
-            "description": "Joined session"
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": { "type": "string", "example": "605c39ef40ee8b2f24e6f5c4" }
+                }
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Joined session" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Session not found" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -184,10 +242,11 @@
       "get": {
         "tags": ["Collaboration"],
         "summary": "List available audio plugins",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": {
-            "description": "Plugins listed"
-          }
+          "200": { "description": "Plugins listed" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       }
     },
@@ -195,10 +254,26 @@
       "post": {
         "tags": ["Collaboration"],
         "summary": "Apply a plugin to audio",
-        "responses": {
-          "200": {
-            "description": "Audio processed"
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "plugin": { "type": "string", "example": "reverb" },
+                  "audioBuffer": { "type": "string", "format": "byte", "example": "<binary data>" }
+                }
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Audio processed" },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
         }
       }
     }

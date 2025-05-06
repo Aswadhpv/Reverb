@@ -16,17 +16,25 @@ exports.updateProfile = async (req, res) => {
         const { username, password } = req.body;
         const updateData = {};
 
-        if (username) updateData.username = username;
+        if (username) {
+            if (username.length < 3) {
+                return res.status(400).json({ msg: "Username must be at least 3 characters" });
+            }
+            updateData.username = username;
+        }
+
         if (password) {
-            if (password.length < 8) {
-                return res.status(400).json({ msg: "Password must be at least 8 characters" });
+            const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+            if (!strongPassword.test(password)) {
+                return res.status(400).json({
+                    msg: "Password must be 8+ characters, include uppercase, lowercase, number, and special character"
+                });
             }
             const salt = await bcrypt.genSalt(10);
             updateData.password = await bcrypt.hash(password, salt);
         }
 
         const user = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-password');
-
         res.status(200).json(user);
     } catch (err) {
         console.error(err);
