@@ -6,7 +6,7 @@
     "description": "API documentation for the Reverb music collaboration project."
   },
   "tags": [
-    { "name": "Authentication", "description": "User registration and login" },
+    { "name": "Authentication", "description": "User registration and login and logout" },
     { "name": "Profile", "description": "User profile management" },
     { "name": "Home", "description": "Home page content" },
     { "name": "Friends", "description": "Friends management (add, list, remove)" },
@@ -77,6 +77,41 @@
         }
       }
     },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logout user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": {
+                      "type": "string",
+                      "example": "Logged out successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid token"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/profile": {
       "get": {
         "tags": ["Profile"],
@@ -117,9 +152,52 @@
     "/api/home": {
       "get": {
         "tags": ["Home"],
-        "summary": "Get home page welcome content",
+        "summary": "Get home page welcome content and feature list",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "Home content fetched" }
+          "200": {
+            "description": "Home content fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "welcome": {
+                      "type": "string",
+                      "example": "Welcome to Reverb, JohnDoe!"
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "example": "Real-time Audio Editing"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Edit and mix tracks with your team live, from anywhere in the world."
+                          },
+                          "image": {
+                            "type": "string",
+                            "example": "https://cdn-icons-png.flaticon.com/512/727/727218.png"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
         }
       }
     },
