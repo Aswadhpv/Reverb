@@ -1,7 +1,9 @@
 const r = require('express').Router();
-const a = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const c = require('../controllers/friendsController');
-r.get('/', a, c.list);
-r.post('/add',    a, c.add);
-r.delete('/:id',  a, c.remove);
+
+r.get('/',        authMiddleware, c.list);
+r.post('/add',    authMiddleware, c.add);
+r.delete('/:id',  authMiddleware, c.remove);
+
 module.exports = r;

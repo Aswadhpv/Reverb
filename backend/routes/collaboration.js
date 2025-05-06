@@ -1,8 +1,10 @@
 const r = require('express').Router();
-const a = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const c = require('../controllers/collaborationController');
-r.post('/session',      a, c.createSession);
-r.post('/join',         a, c.joinSession);
-r.get('/plugins',       a, c.listPlugins);
-r.post('/process',      a, c.processAudio);
+
+r.post('/session', authMiddleware, c.createSession);
+r.post('/join',    authMiddleware, c.joinSession);
+r.get('/plugins',  authMiddleware, c.listPlugins);
+r.post('/process', authMiddleware, c.processAudio);
+
 module.exports = r;

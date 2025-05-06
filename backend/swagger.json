@@ -32,21 +32,54 @@
       "post": {
         "tags": ["Authentication"],
         "summary": "Register a new user",
-        "responses": {
-          "200": {
-            "description": "User registered successfully"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string", "example": "JohnDoe" },
+                  "email": { "type": "string", "example": "john@example.com" },
+                  "password": { "type": "string", "example": "Password123" }
+                },
+                "required": ["username", "email", "password"]
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "User registered successfully" },
+          "400": { "description": "Bad request - invalid input" },
+          "409": { "description": "Conflict - email already in use" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
     "/api/auth/login": {
       "post": {
         "tags": ["Authentication"],
-        "summary": "Login an existing user",
-        "responses": {
-          "200": {
-            "description": "User logged in successfully"
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "example": "john@example.com" },
+                  "password": { "type": "string", "example": "Password123" }
+                },
+                "required": ["email", "password"]
+              }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Login successful, returns token" },
+          "400": { "description": "Bad request - missing fields or invalid" },
+          "401": { "description": "Unauthorized - invalid credentials" },
+          "500": { "description": "Internal server error" }
         }
       }
     },
