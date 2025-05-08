@@ -1,8 +1,8 @@
 require('dotenv').config();
 const open = require('open');
 const express = require('express');
-const cors    = require('cors');
-const http    = require('http');
+const cors = require('cors');
+const http = require('http');
 const { Server } = require('socket.io');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
@@ -21,13 +21,13 @@ app.use(express.json());
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // API Routes
-app.use('/api/auth',          require('./routes/auth'));
-app.use('/api/profile',       require('./routes/profile'));
-app.use('/api/home',          require('./routes/home'));
-app.use('/api/friends',       require('./routes/friends'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/home', require('./routes/home'));
+app.use('/api/friends', require('./routes/friends'));
 app.use('/api/collaboration', require('./routes/collaboration'));
 
-// Global Error Handler (optional good practice)
+// Global Error Handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ msg: "Internal server error" });
@@ -35,32 +35,58 @@ app.use((err, req, res, next) => {
 
 // Create HTTP server + Socket.io
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: '*' }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
-// Socket.io Events
-io.on('connection', socket => {
-    console.log('A user connected');
+// Track connected users in memory (simple)
+let connectedUsers = {};
 
-    socket.on('joinSession', ({ sessionId }) => {
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('joinSession', ({ sessionId, username }) => {
         socket.join(sessionId);
+        connectedUsers[socket.id] = { sessionId, username };
+        console.log(`${username} joined session ${sessionId}`);
+
+        // Notify others in the room
+        socket.to(sessionId).emit('userJoined', { username });
+    });
+
+    socket.on('leaveSession', () => {
+        const { sessionId, username } = connectedUsers[socket.id] || {};
+        if (sessionId && username) {
+            socket.leave(sessionId);
+            socket.to(sessionId).emit('userLeft', { username });
+            console.log(`${username} left session ${sessionId}`);
+            delete connectedUsers[socket.id];
+        }
     });
 
     socket.on('audioData', ({ sessionId, buffer }) => {
         socket.to(sessionId).emit('audioData', buffer);
     });
 
-    socket.on('chatMessage', ({ sessionId, msg }) => {
-        io.to(sessionId).emit('chatMessage', msg);
+    socket.on('chatMessage', ({ sessionId, username, msg }) => {
+        io.to(sessionId).emit('chatMessage', { username, msg });
+    });
+
+    socket.on('applyPlugin', ({ sessionId, pluginName }) => {
+        io.to(sessionId).emit('pluginApplied', { pluginName });
     });
 
     socket.on('disconnect', () => {
-        console.log('A user disconnected');
+        const { sessionId, username } = connectedUsers[socket.id] || {};
+        if (sessionId && username) {
+            socket.to(sessionId).emit('userLeft', { username });
+            console.log(`${username} disconnected from session ${sessionId}`);
+            delete connectedUsers[socket.id];
+        } else {
+            console.log('A user disconnected:', socket.id);
+        }
     });
 });
 
-// Start Server
+// Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`Backend listening on port ${PORT}`);
