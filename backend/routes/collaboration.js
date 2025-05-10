@@ -9,12 +9,14 @@ const r = express.Router();
 r.post('/session', authMiddleware, c.createSession);
 r.post('/join', authMiddleware, c.joinSession);
 r.delete('/session/:id', authMiddleware, c.deleteSession);
+r.post('/session/:id/leave', authMiddleware, c.leaveSession);
 
 r.get('/plugins', authMiddleware, c.listPlugins);
 r.post('/process', authMiddleware, c.processAudio);
 
 r.post('/upload', authMiddleware, upload.single('audio'), c.uploadAudio);
-r.get('/session/:id/files', authMiddleware, c.getFiles);
+r.get('/files/:id/download', authMiddleware, c.downloadFile);
+r.get('/files', authMiddleware, c.getFiles);
 
 r.post('/invite', authMiddleware, c.inviteFriend);
 r.get('/invites', authMiddleware, c.listInvites);
