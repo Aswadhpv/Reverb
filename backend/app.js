@@ -17,6 +17,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ expose uploaded/processed audio files
+app.use('/uploads', express.static('uploads'));
+
 // Swagger API Docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
