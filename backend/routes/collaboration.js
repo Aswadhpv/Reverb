@@ -15,6 +15,7 @@ r.get('/plugins', authMiddleware, c.listPlugins);
 r.post('/process', authMiddleware, c.processAudio);
 
 r.post('/upload', authMiddleware, upload.single('audio'), c.uploadAudio);
+r.get('/files/:id/play', authMiddleware, c.playAudio);
 r.get('/files/:id/download', authMiddleware, c.downloadFile);
 r.get('/files', authMiddleware, c.getFiles);
 

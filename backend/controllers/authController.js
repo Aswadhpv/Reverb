@@ -2,6 +2,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
+const BlacklistedToken = require('../models/BlacklistedToken');
 
 // Registration
 exports.register = async (req, res) => {
@@ -77,7 +78,13 @@ exports.login = async (req, res) => {
 // logout
 exports.logout = async (req, res) => {
     try {
-        // On frontend: just remove the token from local storage or cookie
+        const token = req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(400).json({ msg: 'Token missing' });
+
+        const decoded = jwt.decode(token);
+        const expiry = new Date(decoded.exp * 1000);
+
+        await BlacklistedToken.create({ token, expiresAt: expiry });
         res.status(200).json({ msg: "Logged out successfully" });
     } catch (err) {
         console.error(err);
