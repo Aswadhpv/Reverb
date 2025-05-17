@@ -202,6 +202,29 @@ exports.downloadFile = async (req, res) => {
     }
 };
 
+exports.playAudio = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+
+        if (
+            file.owner.toString() !== req.user.id &&
+            (!file.session || !(await Session.findOne({ _id: file.session, participants: req.user.id })))
+        ) {
+            return res.status(403).json({ msg: 'Not authorized to access this file' });
+        }
+
+        const ext = path.extname(file.path);
+        const contentType = ext === '.mp3' ? 'audio/mpeg' : 'audio/wav';
+
+        res.setHeader('Content-Type', contentType);
+        fs.createReadStream(path.resolve(file.path)).pipe(res);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Failed to play audio' });
+    }
+};
+
 exports.getFiles = async (req, res) => {
     try {
         const query = {};
