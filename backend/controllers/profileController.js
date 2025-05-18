@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 
+// GET profile
 exports.getProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -11,6 +13,7 @@ exports.getProfile = async (req, res) => {
     }
 };
 
+// PUT profile with multipart/form-data
 exports.updateProfile = async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -34,8 +37,15 @@ exports.updateProfile = async (req, res) => {
             updateData.password = await bcrypt.hash(password, salt);
         }
 
-        const user = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-password');
-        res.status(200).json(user);
+        // Profile picture handling
+        if (req.file) {
+            const filename = req.file.filename;
+            const filePath = `/uploads/profilePics/${filename}`;
+            updateData.profilePic = filePath;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-password');
+        res.status(200).json(updatedUser);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: "Server error" });

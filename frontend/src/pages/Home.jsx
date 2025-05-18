@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnimatedLogo from '../components/AnimatedLogo';
 import bg from '../assets/music-bg.jpg';
+import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext); // ✅ Move this here
 
     return (
         <div className="relative min-h-screen w-full bg-black text-white overflow-hidden">
@@ -16,12 +18,14 @@ const Home = () => {
                     Connect, edit, jam, and produce music with friends in real-time.
                 </p>
                 <div className="mt-8 space-x-4">
-                    <button
-                        onClick={() => navigate('/register')} // 🔁 Update this path based on your routing setup
-                        className="px-6 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                        Get Started
-                    </button>
+                    {!user && (
+                        <button
+                            onClick={() => navigate('/register')}
+                            className="px-6 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                            Get Started
+                        </button>
+                    )}
                     <button
                         onClick={() => navigate('/about')}
                         className="px-6 py-2 rounded bg-cyan-600 hover:bg-cyan-700 text-white"
