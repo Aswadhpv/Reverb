@@ -151,12 +151,16 @@ exports.uploadAudio = async (req, res) => {
 
         const sessionId = req.body.sessionId || req.query.sessionId;  // accept from body or query param
 
+        const filepath = path.join('uploads', 'audio', req.file.filename); // physical path
+        const relativePath = `/uploads/audio/${req.file.filename}`;        // for frontend
+
         const file = new File({
-            filename: req.file.filename,
-            path: req.file.path,
+            filename: req.file.originalname,
+            path: relativePath,
             owner: req.user.id,
-            session: sessionId || undefined // optional
+            session: sessionId || undefined
         });
+
         await file.save();
 
         res.status(200).json({
@@ -214,15 +218,45 @@ exports.playAudio = async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized to access this file' });
         }
 
-        const ext = path.extname(file.path);
-        const contentType = ext === '.mp3' ? 'audio/mpeg' : 'audio/wav';
-
-        res.setHeader('Content-Type', contentType);
+        const mimeMap = { '.mp3':'audio/mpeg', '.wav':'audio/wav', '.ogg':'audio/ogg' };
+        const ext = path.extname(file.filename).toLowerCase();
+        res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
         fs.createReadStream(path.resolve(file.path)).pipe(res);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Failed to play audio' });
     }
+};
+
+exports.renameFile = async (req,res) => {
+    const { newName } = req.body;          // may include extension or not
+    if (!newName) return res.status(400).json({ msg:'newName required' });
+
+    const file = await File.findById(req.params.id);
+    if (!file)  return res.status(404).json({ msg:'File not found' });
+    if (file.owner.toString() !== req.user.id)
+        return res.status(403).json({ msg:'Not owner' });
+
+    // split pieces
+    const requestedExt = path.extname(newName);          // '' or '.mp3'
+    const oldExt       = path.extname(file.filename);
+    const base         = requestedExt ? newName.replace(requestedExt,'')
+        : newName;
+
+    const safe = base.replace(/[^a-z0-9_\-]/gi,'_');
+    const finalExt = requestedExt || oldExt;             // keep or change
+    const newFileName = `${safe}${finalExt}`;
+
+    const oldAbs = path.join(__dirname,'..',file.path);
+    const newRel = path.join('uploads','audio', newFileName);
+    const newAbs = path.join(__dirname,'..', newRel);
+
+    fs.renameSync(oldAbs, newAbs);                       // rename on disk
+    file.filename = newFileName;
+    file.path     = newRel;
+    await file.save();
+
+    res.json({ msg:'Renamed', file });
 };
 
 exports.getFiles = async (req, res) => {

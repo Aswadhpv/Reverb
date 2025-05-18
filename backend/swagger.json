@@ -224,7 +224,7 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
@@ -235,7 +235,8 @@
                   "password": {
                     "type": "string",
                     "example": "NewPassword123!"
-                  }
+                  },
+                  "profilePic": { "type": "string", "format": "binary" }
                 }
               }
             }
@@ -962,6 +963,92 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/collaboration/files/{id}/rename": {
+      "put": {
+        "tags": ["Collaboration"],
+        "summary": "Rename an uploaded audio file",
+        "description": "Allows the owner of a file to rename it. The file extension will be preserved automatically.",
+        "operationId": "renameFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the file to rename"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["newName"],
+                "properties": {
+                  "newName": {
+                    "type": "string",
+                    "example": "MyEditedSong",
+                    "description": "New filename (without extension)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File renamed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": {
+                      "type": "string",
+                      "example": "Renamed"
+                    },
+                    "file": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string",
+                          "example": "664b21327f5e2e3a9c728c13"
+                        },
+                        "filename": {
+                          "type": "string",
+                          "example": "MyEditedSong.wav"
+                        },
+                        "path": {
+                          "type": "string",
+                          "example": "/uploads/MyEditedSong.wav"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid new name"
+          },
+          "403": {
+            "description": "User is not authorized to rename the file"
+          },
+          "404": {
+            "description": "File not found"
           }
         }
       }

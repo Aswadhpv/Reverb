@@ -1,24 +1,28 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import About from './pages/About';
-import LogoR from './components/LogoR';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
+import Library from './pages/Library';
+import { AuthProvider } from './context/AuthContext';
+import Navbar from './components/Navbar';
 
 const App = () => (
-    <Router>
-        <nav className="p-4 bg-black text-white flex items-center space-x-6">
-            <Link to="/" className="flex items-center">
-                <LogoR /> {/* 👈 use stylish R instead of full Reverb */}
-            </Link>
-            <div className="flex space-x-4 text-lg font-medium ml-4">
-                <Link to="/about" className="hover:text-purple-400">About</Link>
-            </div>
-        </nav>
-        <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-        </Routes>
-    </Router>
+    <AuthProvider>
+        <Router>
+            <Navbar />
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/library" element={<Library />} />
+            </Routes>
+        </Router>
+    </AuthProvider>
 );
 
 export default App;

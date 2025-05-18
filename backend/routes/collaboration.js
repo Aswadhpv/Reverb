@@ -3,7 +3,7 @@ const { authMiddleware } = require('../middleware/auth');
 const c = require('../controllers/collaborationController');
 const multer = require('multer');
 
-const upload = multer({ dest: 'uploads/' });
+const upload = require('../utils/multerAudio');
 const r = express.Router();
 
 r.post('/session', authMiddleware, c.createSession);
@@ -17,6 +17,7 @@ r.post('/process', authMiddleware, c.processAudio);
 r.post('/upload', authMiddleware, upload.single('audio'), c.uploadAudio);
 r.get('/files/:id/play', authMiddleware, c.playAudio);
 r.get('/files/:id/download', authMiddleware, c.downloadFile);
+r.put('/files/:id/rename', authMiddleware, c.renameFile);
 r.get('/files', authMiddleware, c.getFiles);
 
 r.post('/invite', authMiddleware, c.inviteFriend);

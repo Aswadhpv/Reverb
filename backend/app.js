@@ -1,6 +1,8 @@
 require('dotenv').config();
 const open = require('open');
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -18,7 +20,16 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ expose uploaded/processed audio files
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads/audio', express.static(path.join(__dirname, 'uploads/audio')));
+
+// Ensure profile upload directory exists
+const profileUploadPath = path.join(__dirname, 'uploads', 'profilePics');
+if (!fs.existsSync(profileUploadPath)) {
+    fs.mkdirSync(profileUploadPath, { recursive: true });
+}
+
+// For Profile photo
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Swagger API Docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
