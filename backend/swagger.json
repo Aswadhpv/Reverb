@@ -1053,6 +1053,32 @@
         }
       }
     },
+    "/api/collaboration/files/{id}": {
+      "delete": {
+        "tags": ["Collaboration"],
+        "summary": "Delete an uploaded audio file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID of the file to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File deleted successfully"
+          },
+          "404": {
+            "description": "File not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/collaboration/invite": {
       "post": {
         "tags": [
