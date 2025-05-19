@@ -19,6 +19,7 @@ r.get('/files/:id/play', authMiddleware, c.playAudio);
 r.get('/files/:id/download', authMiddleware, c.downloadFile);
 r.put('/files/:id/rename', authMiddleware, c.renameFile);
 r.get('/files', authMiddleware, c.getFiles);
+r.delete('/files/:id', authMiddleware, c.deleteFile);
 
 r.post('/invite', authMiddleware, c.inviteFriend);
 r.get('/invites', authMiddleware, c.listInvites);

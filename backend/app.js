@@ -15,23 +15,24 @@ connectDB();
 
 const app = express();
 
-// Middlewares
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// ✅ expose uploaded/processed audio files
-app.use('/uploads/audio', express.static(path.join(__dirname, 'uploads/audio')));
-
-// Ensure profile upload directory exists
-const profileUploadPath = path.join(__dirname, 'uploads', 'profilePics');
-if (!fs.existsSync(profileUploadPath)) {
-    fs.mkdirSync(profileUploadPath, { recursive: true });
-}
-
-// For Profile photo
+// ✅ Serve audio and profile uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/audio', express.static(path.join(__dirname, 'uploads/audio')));
+app.use('/uploads/profilePics', express.static(path.join(__dirname, 'uploads/profilePics')));
 
-// Swagger API Docs
+// Ensure upload directories exist
+['uploads/audio', 'uploads/profilePics'].forEach(dir => {
+    const fullPath = path.join(__dirname, dir);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
+    }
+});
+
+// Swagger Docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // API Routes
@@ -51,7 +52,6 @@ app.use((err, req, res, next) => {
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-// Track connected users in memory (simple)
 let connectedUsers = {};
 
 io.on('connection', (socket) => {
@@ -60,9 +60,6 @@ io.on('connection', (socket) => {
     socket.on('joinSession', ({ sessionId, username }) => {
         socket.join(sessionId);
         connectedUsers[socket.id] = { sessionId, username };
-        console.log(`${username} joined session ${sessionId}`);
-
-        // Notify others in the room
         socket.to(sessionId).emit('userJoined', { username });
     });
 
@@ -71,7 +68,6 @@ io.on('connection', (socket) => {
         if (sessionId && username) {
             socket.leave(sessionId);
             socket.to(sessionId).emit('userLeft', { username });
-            console.log(`${username} left session ${sessionId}`);
             delete connectedUsers[socket.id];
         }
     });
@@ -92,15 +88,11 @@ io.on('connection', (socket) => {
         const { sessionId, username } = connectedUsers[socket.id] || {};
         if (sessionId && username) {
             socket.to(sessionId).emit('userLeft', { username });
-            console.log(`${username} disconnected from session ${sessionId}`);
             delete connectedUsers[socket.id];
-        } else {
-            console.log('A user disconnected:', socket.id);
         }
     });
 });
 
-// Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`Backend listening on port ${PORT}`);

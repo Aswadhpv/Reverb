@@ -149,27 +149,16 @@ exports.uploadAudio = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
 
-        const sessionId = req.body.sessionId || req.query.sessionId;  // accept from body or query param
-
-        const filepath = path.join('uploads', 'audio', req.file.filename); // physical path
-        const relativePath = `/uploads/audio/${req.file.filename}`;        // for frontend
+        const relPath = `/uploads/audio/${req.file.filename}`;   // what frontend will fetch
 
         const file = new File({
-            filename: req.file.originalname,
-            path: relativePath,
-            owner: req.user.id,
-            session: sessionId || undefined
+            filename: req.file.originalname,   // keep human name
+            path    : relPath,
+            owner   : req.user.id
         });
-
         await file.save();
 
-        res.status(200).json({
-            msg: 'File uploaded successfully',
-            file: file.filename,
-            path: `/uploads/${file.filename}`,
-            originalName: req.file.originalname,
-            session: file.session
-        });
+        res.status(200).json({ msg: 'File uploaded', file });
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Failed to upload file' });
@@ -180,26 +169,17 @@ exports.downloadFile = async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
         if (!file) return res.status(404).json({ msg: 'File not found' });
+        if (file.owner.toString() !== req.user.id)
+            return res.status(403).json({ msg: 'Forbidden' });
 
-        // Authorization check
-        if (file.session) {
-            const session = await Session.findById(file.session);
-            if (!session) return res.status(404).json({ msg: 'Session not found' });
+        const abs = path.join(__dirname, '..', file.path);       // turn relative => absolute
+        if (!fs.existsSync(abs)) return res.status(404).json({ msg: 'Missing on disk' });
 
-            if (!session.participants.includes(req.user.id) && session.owner.toString() !== req.user.id) {
-                return res.status(403).json({ msg: 'Not authorized to access this session file' });
-            }
-        } else if (file.owner.toString() !== req.user.id) {
-            return res.status(403).json({ msg: 'Not authorized to access this file' });
-        }
+        // allow the browser (fetch) to read Content-Disposition
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 
-        // Determine file extension (default to .wav if unknown)
-        const ext = path.extname(file.path) || '.wav';
-        const downloadName = file.filename + ext;
-
-        res.setHeader('Content-Type', 'audio/wav');  // force content type
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
-        res.sendFile(path.resolve(file.path));
+            // send the file with the real name
+        res.download(abs, file.filename);   // (*download* helper sets headers for us)
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Failed to download file' });
@@ -228,35 +208,59 @@ exports.playAudio = async (req, res) => {
     }
 };
 
-exports.renameFile = async (req,res) => {
-    const { newName } = req.body;          // may include extension or not
-    if (!newName) return res.status(400).json({ msg:'newName required' });
+exports.renameFile = async (req, res) => {
+    try {
+        const { newName } = req.body;
+        if (!newName?.trim()) return res.status(400).json({ msg: 'newName required' });
 
-    const file = await File.findById(req.params.id);
-    if (!file)  return res.status(404).json({ msg:'File not found' });
-    if (file.owner.toString() !== req.user.id)
-        return res.status(403).json({ msg:'Not owner' });
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'Not found' });
+        if (file.owner.toString() !== req.user.id)
+            return res.status(403).json({ msg: 'Forbidden' });
 
-    // split pieces
-    const requestedExt = path.extname(newName);          // '' or '.mp3'
-    const oldExt       = path.extname(file.filename);
-    const base         = requestedExt ? newName.replace(requestedExt,'')
-        : newName;
+        const oldAbs = path.join(__dirname, '..', file.path);
+        const oldExt = path.extname(file.filename);           // e.g. '.mp3'
 
-    const safe = base.replace(/[^a-z0-9_\-]/gi,'_');
-    const finalExt = requestedExt || oldExt;             // keep or change
-    const newFileName = `${safe}${finalExt}`;
+        /* allow user to change ext if they typed one, else keep old */
+        const desired = newName.includes('.') ? newName : newName + oldExt;
+        const safe    = desired.replace(/[^a-z0-9_\-.]/gi, '_'); // very loose sanitation
 
-    const oldAbs = path.join(__dirname,'..',file.path);
-    const newRel = path.join('uploads','audio', newFileName);
-    const newAbs = path.join(__dirname,'..', newRel);
+        const newRel  = `/uploads/audio/${Date.now()}_${safe}`;
+        const newAbs  = path.join(__dirname, '..', newRel);
 
-    fs.renameSync(oldAbs, newAbs);                       // rename on disk
-    file.filename = newFileName;
-    file.path     = newRel;
-    await file.save();
+        fs.renameSync(oldAbs, newAbs);
 
-    res.json({ msg:'Renamed', file });
+        file.filename = safe;
+        file.path     = newRel;
+        await file.save();
+
+        res.json({ msg: 'Renamed', file });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Rename failed' });
+    }
+};
+
+exports.deleteFile = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+
+        if (file.owner.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Not authorized to delete' });
+        }
+
+        // Delete physical file
+        if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+        }
+
+        await File.findByIdAndDelete(req.params.id);
+        res.status(200).json({ msg: 'File deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Failed to delete file' });
+    }
 };
 
 exports.getFiles = async (req, res) => {
