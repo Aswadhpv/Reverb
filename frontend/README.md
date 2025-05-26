@@ -1,3 +1,32 @@
+# 🎨 Frontend - Reverb Platform
+
+React-based UI for Reverb. Includes animated logo, session editor, library, and auth views.
+
+## 🚀 Setup
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## 📁 Pages
+- `/` Home
+- `/about` About the project
+- `/login`, `/register` Auth
+- `/profile` Edit user profile + profile pic
+- `/library` Personal audio library
+- `/collab` Session hub (create/join)
+- `/collab/:id` Live session editor
+
+## 📦 Features
+- AudioPlayer & Waveform editor
+- Drag & drop file upload
+- Live waveform player (Wavesurfer.js)
+- Add/Remove audio from session
+- Save-to-Library and download
+- Protected routes via AuthContext
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
