@@ -54,7 +54,7 @@ Visit: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
 
 ## Ports
 - http://localhost:3000 (frontend)
-- http://localhost:5000/api/docs/#/ (backend)
+- http://localhost:5000/api/docs (backend)
 - http://localhost:6000 (audio-service)
 
 ## 📂 Module READMEs
