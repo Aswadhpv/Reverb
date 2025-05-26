@@ -18,7 +18,8 @@ exports.createSession = async (req, res) => {
             participants: [req.user.id]
         });
         await session.save();
-        res.status(200).json(session);
+        const populated = await Session.findById(session._id).populate('owner', 'username email');
+        res.status(200).json(populated);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server error' });
@@ -36,7 +37,8 @@ exports.joinSession = async (req, res) => {
             await session.save();
         }
 
-        res.status(200).json(session);
+        const populated = await Session.findById(session._id).populate('owner', 'username email');
+        res.status(200).json(populated);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server error' });
@@ -59,6 +61,33 @@ exports.leaveSession = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Failed to leave session' });
+    }
+};
+
+exports.getSession = async (req, res) => {
+    try {
+        const sess = await Session.findById(req.params.id)
+            .populate('owner', 'username email');
+        if (!sess) return res.status(404).json({ msg: 'Session not found' });
+        res.json(sess);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+exports.getMySessions = async (req, res) => {
+    try {
+        const sessions = await Session.find({
+            $or: [
+                { owner: req.user.id },
+                { participants: req.user.id }
+            ]
+        }).populate('owner', 'username email');
+        res.json(sessions);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ msg: 'Failed to fetch sessions' });
     }
 };
 
@@ -101,7 +130,7 @@ exports.processAudio = async (req, res) => {
         const file = await File.findById(fileId);
         if (!file) return res.status(404).json({ msg: 'File not found' });
 
-        // Validate access
+        // ✅ Validate access
         if (
             file.owner.toString() !== req.user.id &&
             (!file.session || !(await Session.findOne({
@@ -112,50 +141,59 @@ exports.processAudio = async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized to access this file' });
         }
 
-        const audioBuffer = fs.readFileSync(file.path).toString('latin1');
+        // ✅ Ensure cross-platform-safe path
+        const absPath = path.join(__dirname, '..', file.path);
+        const audioBuffer = fs.readFileSync(absPath).toString('latin1');
 
-        // Call audio-service
+        // ✅ Call external audio service
         const { data } = await axios.post(`${AUDIO}/process`, {
             plugin,
             audio: audioBuffer
         }, { responseType: 'arraybuffer' });
 
-        // Save processed file
+        // ✅ Save processed file to disk and DB
         const filename = `${Date.now()}_${plugin}_${file.filename}.wav`;
-        const filepath = path.join('uploads', filename);
-        fs.writeFileSync(filepath, Buffer.from(data));
+        const relPath = `/uploads/audio/${filename}`;
+        const absOut = path.join(__dirname, '..', 'uploads', 'audio', filename);
 
-        // Store in DB
+        fs.writeFileSync(absOut, Buffer.from(data));
+
         const processedFile = new File({
-            filename: filename,
-            path: filepath,
+            filename,
+            path: relPath,
             owner: req.user.id,
             session: file.session || undefined // optional link to session
         });
+
         await processedFile.save();
 
         res.status(200).json({
             msg: 'Audio processed and saved',
             file: processedFile.filename,
-            path: `/uploads/${processedFile.filename}`
+            path: relPath
         });
+
     } catch (err) {
-        console.error(err);
+        console.error('Failed to process audio:', err);
         res.status(500).json({ msg: 'Failed to process audio' });
     }
 };
+
 
 exports.uploadAudio = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
 
-        const relPath = `/uploads/audio/${req.file.filename}`;   // what frontend will fetch
+        const relPath = `/uploads/audio/${req.file.filename}`;
+        const sessionId = req.query.sessionId;
 
         const file = new File({
-            filename: req.file.originalname,   // keep human name
-            path    : relPath,
-            owner   : req.user.id
+            filename: req.file.originalname,
+            path: relPath,
+            owner: req.user.id,
+            ...(sessionId ? { session: sessionId } : {})
         });
+
         await file.save();
 
         res.status(200).json({ msg: 'File uploaded', file });
@@ -241,6 +279,110 @@ exports.renameFile = async (req, res) => {
     }
 };
 
+exports.saveFileToLibrary = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+
+        if (file.owner.toString() !== req.user.id)
+            return res.status(403).json({ msg: 'Not authorized to save this file' });
+
+        file.isFavorite = true;
+        await file.save();
+
+        res.status(200).json({ msg: 'File saved to library', file });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Failed to save file' });
+    }
+};
+
+exports.assignFileToSession = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+        if (file.owner.toString() !== req.user.id)
+            return res.status(403).json({ msg: 'Not your file' });
+
+        const session = await Session.findById(req.query.sessionId);
+        if (!session) return res.status(404).json({ msg: 'Session not found' });
+
+        // Check if user is a participant of that session
+        if (!session.participants.includes(req.user.id)) {
+            return res.status(403).json({ msg: 'Not authorized to attach to this session' });
+        }
+
+        file.session = session._id;
+        await file.save();
+
+        res.status(200).json({ msg: 'Attached file to session', file });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Failed to assign file' });
+    }
+};
+
+exports.saveCopyToLibrary = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+
+        const relPath = `/uploads/audio/${Date.now()}_copy_${file.filename}`;
+        const absSrc = path.join(__dirname, '..', file.path);
+        const absDest = path.join(__dirname, '..', relPath);
+
+        fs.copyFileSync(absSrc, absDest);
+
+        const copy = new File({
+            filename: file.filename,
+            path: relPath,
+            owner: req.user.id
+        });
+
+        await copy.save();
+        res.status(200).json({ msg: 'Copied to library', file: copy });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ msg: 'Copy failed' });
+    }
+};
+
+exports.copyFileToSession = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).json({ msg: 'File not found' });
+
+        const session = await Session.findById(req.query.sessionId);
+        if (!session) return res.status(404).json({ msg: 'Session not found' });
+
+        // Ensure user is participant
+        if (!session.participants.includes(req.user.id)) {
+            return res.status(403).json({ msg: 'You are not part of this session' });
+        }
+
+        const relPath = `/uploads/audio/${Date.now()}_sessionCopy_${file.filename}`;
+        const absSrc = path.join(__dirname, '..', file.path);
+        const absDest = path.join(__dirname, '..', relPath);
+
+        fs.copyFileSync(absSrc, absDest);
+
+        const copy = new File({
+            filename: file.filename,
+            path: relPath,
+            owner: req.user.id,
+            session: session._id
+        });
+
+        await copy.save();
+        res.status(200).json({ msg: 'File copied to session', file: copy });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ msg: 'Failed to copy file to session' });
+    }
+};
+
 exports.deleteFile = async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
@@ -286,7 +428,13 @@ exports.getFiles = async (req, res) => {
 
         const files = await File.find(query)
             .populate('owner', 'username email')
-            .populate('session', 'name');
+            .populate({
+                path: 'session',
+                populate: {
+                    path: 'owner',
+                    select: 'username email'
+                }
+            });
 
         res.status(200).json(files);
     } catch (err) {

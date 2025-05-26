@@ -15,6 +15,7 @@ export default function Navbar() {
                 <Link to="/about"   className="hover:text-purple-400">About</Link>
                 {user && <Link  to="/library" className="hover:text-purple-400">Library</Link>}
                 {user && <Link  to="/friends" className="hover:text-purple-400">Friends</Link>}
+                <Link to="/collab" className="hover:underline">Collab</Link>
             </div>
 
             {/* right */}
