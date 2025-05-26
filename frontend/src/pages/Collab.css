@@ -1,0 +1,82 @@
+.collab-page {
+    display: flex;
+    height: 100vh;
+    background-size: cover;
+    color: white;
+}
+
+.collab-left, .collab-right {
+    flex: 1;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    overflow-y: auto;
+}
+
+.collab-center {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 40px;
+}
+
+.collab-heading {
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.form-row {
+    display: flex;
+    margin: 15px 0;
+    align-items: center;
+}
+
+.collab-input {
+    padding: 10px;
+    width: 300px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background-color: #1e1e1e;
+    color: white;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.collab-button {
+    padding: 10px 16px;
+    background-color: #8b5cf6; /* Purple tone */
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.collab-button:hover {
+    background-color: #7c3aed;
+}
+
+.session-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.session-item {
+    padding: 10px;
+    background-color: #333;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.custom-calendar {
+    background-color: white;
+    color: black;
+    border-radius: 10px;
+    padding: 10px;
+}

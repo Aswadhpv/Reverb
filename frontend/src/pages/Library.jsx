@@ -7,24 +7,21 @@ import API from '../api/auth';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 
-const BASE = 'http://localhost:5000';   // backend origin
+const BASE = 'http://localhost:5000';
 
 export default function Library() {
-
     const { user } = useContext(AuthContext);
+    const [files, setFiles] = useState([]);
+    const [uploadPct, setUploadPct] = useState(0);
+    const [renameId, setRenameId] = useState(null);
+    const [newName, setNewName] = useState('');
+    const [playingId, setPlayingId] = useState(null);
 
-    /* ---------- state ---------- */
-    const [files,       setFiles]       = useState([]);
-    const [uploadPct,   setUploadPct]   = useState(0);
-    const [renameId,    setRenameId]    = useState(null);
-    const [newName,     setNewName]     = useState('');
-    const [playingId,   setPlayingId]   = useState(null);
-
-    /* ---------- helpers ---------- */
     const fetchFiles = useCallback(async () => {
         try {
             const { data } = await API.get('/collaboration/files');
-            setFiles(data.reverse());          // newest-first
+            const personal = data.filter(f => !f.session || f.isFavorite); // ✅ includes saved session files
+            setFiles(personal.reverse());
         } catch (e) {
             console.error('Load files fail', e);
         }
@@ -32,7 +29,6 @@ export default function Library() {
 
     useEffect(() => { if (user) fetchFiles(); }, [user, fetchFiles]);
 
-    /* ---------- upload ---------- */
     const fileInput = useRef(null);
 
     const upload = async (file) => {
@@ -54,7 +50,6 @@ export default function Library() {
         }
     };
 
-    /* ---------- rename ---------- */
     const doRename = async (id) => {
         try {
             await API.put(`/collaboration/files/${id}/rename`, { newName });
@@ -64,7 +59,6 @@ export default function Library() {
         } catch { alert('Rename failed'); }
     };
 
-    /* ---------- delete ---------- */
     const doDelete = async (id) => {
         if (!window.confirm('Delete this file forever?')) return;
         try {
@@ -74,25 +68,24 @@ export default function Library() {
         } catch { alert('Delete failed'); }
     };
 
-    /* ---------- download ---------- */
     const doDownload = async (file) => {
         try {
-            const token    = localStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const response = await fetch(`${BASE}/api/collaboration/files/${file._id}/download`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Download failed');
 
-            const blob     = await response.blob();
-            const url      = URL.createObjectURL(blob);
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
 
-            const a        = document.createElement('a');
-            const cd       = response.headers.get('Content-Disposition');
+            const a = document.createElement('a');
+            const cd = response.headers.get('Content-Disposition');
             const filename = cd
                 ? cd.split('filename=')[1].replace(/"/g, '')
-                : file.filename;                       // fallback to visible name
+                : file.filename;
 
-            a.href = url;  a.download = filename;
+            a.href = url; a.download = filename;
             document.body.appendChild(a); a.click(); a.remove();
             URL.revokeObjectURL(url);
         } catch (e) {
@@ -101,7 +94,19 @@ export default function Library() {
         }
     };
 
-    /* ---------- UI ---------- */
+    const attachToSession = async (id) => {
+        const sessionId = prompt("Enter session ID to copy this file to:");
+        if (!sessionId) return;
+
+        try {
+            await API.post(`/collaboration/files/${id}/copyToSession?sessionId=${sessionId}`);
+            alert('File copied to session!');
+        } catch (e) {
+            alert('Failed to copy file to session');
+            console.error(e);
+        }
+    };
+
     return (
         <div
             className="min-h-screen p-8 text-white bg-gradient-to-br from-black via-gray-900 to-black"
@@ -113,7 +118,6 @@ export default function Library() {
         >
             <h2 className="text-3xl font-bold flex items-center gap-2 mb-6">🎧 My Library</h2>
 
-            {/* upload controls */}
             <div className="mb-6 space-x-4">
                 <button
                     className="bg-purple-700 hover:bg-purple-800 px-4 py-2 rounded"
@@ -139,8 +143,6 @@ export default function Library() {
 
                     return (
                         <div key={f._id} className="bg-[#111827] p-4 rounded shadow space-y-3">
-
-                            {/* header row */}
                             {isRenaming ? (
                                 <div className="flex gap-2">
                                     <input
@@ -165,24 +167,30 @@ export default function Library() {
                                     }
                                 >
                                     {f.filename}
+                                    {f.isFavorite && <span className="text-yellow-400 text-xs ml-2">⭐ Favorite</span>}
+                                    {f.session && <span className="text-purple-400 text-xs ml-2">(from session)</span>}
                                 </div>
                             )}
 
-                            {/* action links */}
                             {!isRenaming && (
                                 <div className="flex gap-5 text-sm">
-                  <span
-                      className="text-blue-400 hover:underline cursor-pointer"
-                      onClick={() => {
-                          setRenameId(f._id);
-                          setNewName(f.filename.replace(/\.[^/.]+$/, ''));
-                      }}
-                  >Rename</span>
+                                    <span
+                                        className="text-blue-400 hover:underline cursor-pointer"
+                                        onClick={() => {
+                                            setRenameId(f._id);
+                                            setNewName(f.filename.replace(/\.[^/.]+$/, ''));
+                                        }}
+                                    >Rename</span>
 
                                     <span
                                         className="text-green-400 hover:underline cursor-pointer"
                                         onClick={() => doDownload(f)}
                                     >Download</span>
+
+                                    <span
+                                        className="text-yellow-400 hover:underline cursor-pointer"
+                                        onClick={() => attachToSession(f._id)}
+                                    >Add to Session</span>
 
                                     <span
                                         className="text-red-400 hover:underline cursor-pointer"
@@ -191,7 +199,6 @@ export default function Library() {
                                 </div>
                             )}
 
-                            {/* audio player (only one open at a time) */}
                             {playingId === f._id && (
                                 <AudioPlayer
                                     src={`${BASE}${f.path}`}

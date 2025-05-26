@@ -967,6 +967,166 @@
         }
       }
     },
+    "/api/collaboration/files/{id}/save": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Mark a file as saved to library",
+        "description": "Sets isFavorite=true on a file. Only the file's owner can do this.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID of the file to save"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File saved to library",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": { "type": "string" },
+                    "file": {
+                      "type": "object",
+                      "properties": {
+                        "_id": { "type": "string" },
+                        "filename": { "type": "string" },
+                        "path": { "type": "string" },
+                        "isFavorite": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Not authorized to save file" },
+          "404": { "description": "File not found" },
+          "500": { "description": "Server error" }
+        },
+        "security": [
+          { "bearerAuth": [] }
+        ]
+      }
+    },
+    "/api/collaboration/files/{id}/saveCopy": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Copy a session-edited file to personal library",
+        "description": "Creates a copy of the file with isFavorite=true. The original remains in the session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID of the file to save as copy"
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "File copied to library",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": { "type": "string" },
+                    "file": {
+                      "type": "object",
+                      "properties": {
+                        "_id": { "type": "string" },
+                        "filename": { "type": "string" },
+                        "path": { "type": "string" },
+                        "isFavorite": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Not authorized" },
+          "404": { "description": "File not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/api/collaboration/files/{id}/copyToSession": {
+      "post": {
+        "tags": ["Collaboration"],
+        "summary": "Copy a library file into a session",
+        "description": "Clones the file and assigns it to a session. The original remains in personal library.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID of the library file to copy"
+          },
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Session ID to assign the copied file to"
+          }
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "File copied to session" },
+          "403": { "description": "Not authorized" },
+          "404": { "description": "File or session not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/api/collaboration/files/{id}/assign": {
+      "patch": {
+        "tags": ["Collaboration"],
+        "summary": "Assign an existing uploaded file to a session",
+        "description": "Links a file to a specific session without duplicating it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID of the file to assign"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Session ID to assign to"
+                  }
+                },
+                "required": ["sessionId"]
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "File assigned to session" },
+          "403": { "description": "Not authorized" },
+          "404": { "description": "File or session not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
     "/api/collaboration/files/{id}/rename": {
       "put": {
         "tags": ["Collaboration"],
