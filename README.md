@@ -62,4 +62,17 @@ Visit: [http://localhost:5000/api/docs](http://localhost:5000/api/docs)
 - [`frontend/README.md`](./frontend/README.md)
 - [`audio-service/README.md`](./audio-service/README.md)
 
-  
+---
+
+## 👨‍💻 Created By
+
+**Aswadh Puthen Veede**
+
+---
+
+## 🛠 Technologies Used
+
+- **Frontend**: React.js, Tailwind CSS, Wavesurfer.js, Axios, React Router
+- **Backend**: Node.js, Express.js, MongoDB, Multer, JWT, Socket.IO
+- **Audio Service**: Python (Flask), SciPy, NumPy
+- **Other**: Swagger for API docs, dotenv, cors, React Context API  
