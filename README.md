@@ -23,7 +23,7 @@ Start each service separately:
 ```bash
 cd backend
 npm install
-npm start
+npx nodemon app.js
 ```
 
 ### 2. Frontend
