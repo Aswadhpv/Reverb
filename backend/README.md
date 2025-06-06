@@ -6,7 +6,7 @@ Node.js + Express backend for managing users, sessions, chat, and audio file ope
 ```bash
 cd backend
 npm install
-npm start
+npx nodemon app.js
 ```
 
 ## 🔐 .env Example
